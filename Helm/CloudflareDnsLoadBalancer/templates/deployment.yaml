@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflare-dns-balanceloader
+  labels:
+    app: cloudflare-dns-balanceloader
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflare-dns-balanceloader
+  template:
+    metadata:
+      labels:
+        app: cloudflare-dns-balanceloader
+    spec:
+      restartPolicy: Always
+        terminationGracePeriodSeconds : 0
+    containers:
+      name: cloudflare-dns-balanceloader
+      image: datstarkey/cloudflare-dns-balanceloader:latest
+      imagePullPolicy: IfNotPresent
+      env:
+        CLOUDFLARE_TOKEN: {{ .Values.cloudFlare.token }}
+        CLOUDFLARE_PROXY: {{ .Values.cloudFlare.proxy }}
+        

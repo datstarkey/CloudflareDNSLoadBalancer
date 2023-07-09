@@ -1,0 +1,8 @@
+
+
+cloudFlare:
+  token: "YOUR_TOKEN_HERE"
+  proxy: false
+
+
+
