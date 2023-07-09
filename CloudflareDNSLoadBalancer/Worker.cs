@@ -95,6 +95,13 @@ public class Worker : BackgroundService
 				Name = host
 			}, cancellationToken: stoppingToken);
 
+
+			if (zones is null)
+			{
+				_logger.LogWarning("Could not find zone for {Host}", host);
+				continue;
+			}
+			
 			var zone = zones.Result.FirstOrDefault();
 			if (zone is null)
 			{

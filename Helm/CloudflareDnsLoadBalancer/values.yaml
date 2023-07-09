@@ -1,8 +1,6 @@
-
-
-cloudFlare:
+cloudflare:
   token: "YOUR_TOKEN_HERE"
-  proxy: false
+  proxy: "false"
 
 
 
