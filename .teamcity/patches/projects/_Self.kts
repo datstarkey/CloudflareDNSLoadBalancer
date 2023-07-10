@@ -21,7 +21,7 @@ changeProject(DslContext.projectId) {
             password("env.HelmPassword", "", label = "HelmPassword", display = ParameterDisplay.HIDDEN)
         }
         update {
-            password("env.HelmPassword", "credentialsJSON:6ee53c86-bce8-4d74-9a8e-113fdf75f44c", label = "HelmPassword", display = ParameterDisplay.HIDDEN)
+            password("env.HelmPassword", "credentialsJSON:fe0d17a7-e5e2-4459-8189-e6c23d466f2f", label = "HelmPassword", display = ParameterDisplay.HIDDEN)
         }
     }
 }
