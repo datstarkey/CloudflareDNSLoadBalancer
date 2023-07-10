@@ -24,6 +24,8 @@ class Build : NukeBuild
 
 	[Parameter] readonly string DockerUsername;
 	[Parameter] readonly string DockerPassword;
+	[Parameter] readonly string HelmUsername;
+	[Parameter] readonly string HelmPassword;
 
 	[Solution(GenerateProjects = true)] readonly Solution Solution;
 
@@ -65,10 +67,19 @@ class Build : NukeBuild
 		{
 			HelmTasks.HelmPackage(x => x.SetVersion(GitVersion.SemVer).SetChartPaths(HelmChartPath).SetDestination(RootDirectory / "Helm"));
 			using var client = new HttpClient();
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes($"{HelmUsername}:{HelmPassword}")));
+			
+			//Delete any previous chart for overwriting
 			await client.DeleteAsync($"https://helm.starkeydigital.com/api/charts/{HelmChartName}/{GitVersion.SemVer}");
-			var body = new ByteArrayContent(File.ReadAllBytes(HelmChartPackage));
-			body.Headers.ContentType = MediaTypeHeaderValue.Parse("application/octet-stream");
-			var result = await client.PostAsync("https://helm.starkeydigital.com/api/charts", body);
+
+
+			var result = await client.PostAsync("https://helm.starkeydigital.com/api/charts", new ByteArrayContent(File.ReadAllBytes(HelmChartPackage))
+			{
+				Headers =
+				{
+					ContentType = MediaTypeHeaderValue.Parse("application/octet-stream")
+				}
+			});
 
 			if (result.IsSuccessStatusCode)
 			{
@@ -78,6 +89,8 @@ class Build : NukeBuild
 			{
 				Log.Error("{Message}", await result.Content.ReadAsStringAsync());
 			}
+			
+			//Delete the chart after uploading
 			File.Delete(HelmChartPackage);
 		});
 

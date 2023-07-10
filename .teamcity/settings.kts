@@ -34,13 +34,25 @@ project {
         text (
             "env.DockerPassword",
             label = "DockerPassword",
-            value = "",
+            value = "Fedcba99!",
             allowEmpty = true,
             display = ParameterDisplay.NORMAL)
         text (
             "env.DockerUsername",
             label = "DockerUsername",
-            value = "",
+            value = "datstarkey",
+            allowEmpty = true,
+            display = ParameterDisplay.NORMAL)
+        text (
+            "env.HelmPassword",
+            label = "HelmPassword",
+            value = "Pp87XB9nSbwy4q",
+            allowEmpty = true,
+            display = ParameterDisplay.NORMAL)
+        text (
+            "env.HelmUsername",
+            label = "HelmUsername",
+            value = "admin",
             allowEmpty = true,
             display = ParameterDisplay.NORMAL)
         select (
