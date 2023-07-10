@@ -12,7 +12,10 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 
 
-[TeamCity(VcsTriggeredTargets = new []{nameof(UploadHelm), nameof(Push)},Version = "2023.05")]
+[TeamCity(
+	VcsTriggeredTargets = new []{nameof(UploadHelm), nameof(Push)},
+	NonEntryTargets = new[]{nameof(Login), nameof(Compile)},
+	Version = "2023.05")]
 class Build : NukeBuild
 {
 	public static int Main() => Execute<Build>(x => x.Push, x => x.UploadHelm);
@@ -38,7 +41,7 @@ class Build : NukeBuild
 	Target Login => _ => _
 		.Requires(()=> DockerUsername)
 		.Requires(()=> DockerPassword)
-		.Before(Compile)
+		.Unlisted()
 		.Executes(() =>
 			DockerTasks.DockerLogin(x => x
 				.SetUsername(DockerUsername)
@@ -47,7 +50,8 @@ class Build : NukeBuild
 		);
 
 	Target Compile => _ => _
-		.Before(Push)
+		.DependsOn(Login)
+		.Unlisted()
 		.Executes(() =>
 			DockerTasks.DockerBuild(x => x
 				.SetPath(RootDirectory)
@@ -57,6 +61,7 @@ class Build : NukeBuild
 		);
 
 	Target Push => _ => _
+		.DependsOn(Compile)
 		.Executes(() => DockerTasks.DockerPush(x => x.SetName(DockerTag)));
 
 	Target UploadHelm => _ => _

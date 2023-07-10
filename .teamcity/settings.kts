@@ -102,12 +102,12 @@ object Push : BuildType({
     steps {
         exec {
             path = "build.cmd"
-            arguments = "Push --skip"
+            arguments = "Login Compile Push --skip"
             conditions { contains("teamcity.agent.jvm.os.name", "Windows") }
         }
         exec {
             path = "build.sh"
-            arguments = "Push --skip"
+            arguments = "Login Compile Push --skip"
             conditions { doesNotContain("teamcity.agent.jvm.os.name", "Windows") }
         }
     }

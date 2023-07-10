@@ -11,13 +11,15 @@
           "description": "Indicates to continue a previously failed build attempt"
         },
         "DockerPassword": {
-          "type": "string"
+          "type": "string",
+          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
         },
         "DockerUsername": {
           "type": "string"
         },
         "HelmPassword": {
-          "type": "string"
+          "type": "string",
+          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
         },
         "HelmUsername": {
           "type": "string"
