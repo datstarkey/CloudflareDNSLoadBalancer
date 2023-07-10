@@ -1,13 +1,8 @@
 using System;
-using System.Linq;
 using Nuke.Common;
-using Nuke.Common.CI;
 using Nuke.Common.CI.TeamCity;
-using Nuke.Common.Execution;
-using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
-using Nuke.Common.Tooling;
 using Nuke.Common.Tools.Docker;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.Helm;
@@ -17,15 +12,15 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 
 
-[TeamCity(VcsTriggeredTargets = new []{nameof(Push), nameof(UploadHelm)})]
+[TeamCity(VcsTriggeredTargets = new []{nameof(UploadHelm), nameof(Push)},Version = "2023.05")]
 class Build : NukeBuild
 {
 	public static int Main() => Execute<Build>(x => x.Push, x => x.UploadHelm);
 
 	[Parameter] readonly string DockerUsername;
-	[Parameter] readonly string DockerPassword;
+	[Parameter] [Secret] readonly string DockerPassword;
 	[Parameter] readonly string HelmUsername;
-	[Parameter] readonly string HelmPassword;
+	[Parameter] [Secret] readonly string HelmPassword;
 
 	[Solution(GenerateProjects = true)] readonly Solution Solution;
 
@@ -41,6 +36,9 @@ class Build : NukeBuild
 	string HelmChartPath => RootDirectory / "Helm" / HelmChartName;
 
 	Target Login => _ => _
+		.Requires(()=> DockerUsername)
+		.Requires(()=> DockerPassword)
+		.Before(Compile)
 		.Executes(() =>
 			DockerTasks.DockerLogin(x => x
 				.SetUsername(DockerUsername)
@@ -49,7 +47,7 @@ class Build : NukeBuild
 		);
 
 	Target Compile => _ => _
-		.DependsOn(Login)
+		.Before(Push)
 		.Executes(() =>
 			DockerTasks.DockerBuild(x => x
 				.SetPath(RootDirectory)
@@ -59,10 +57,11 @@ class Build : NukeBuild
 		);
 
 	Target Push => _ => _
-		.DependsOn(Compile)
 		.Executes(() => DockerTasks.DockerPush(x => x.SetName(DockerTag)));
 
 	Target UploadHelm => _ => _
+		.Requires(()=> HelmUsername)
+		.Requires(()=> HelmPassword)
 		.Executes(async () =>
 		{
 			HelmTasks.HelmPackage(x => x.SetVersion(GitVersion.SemVer).SetChartPaths(HelmChartPath).SetDestination(RootDirectory / "Helm"));

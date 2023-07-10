@@ -20,39 +20,19 @@ import jetbrains.buildServer.configs.kotlin.v2018_1.buildSteps.*
 import jetbrains.buildServer.configs.kotlin.v2018_1.triggers.*
 import jetbrains.buildServer.configs.kotlin.v2018_1.vcs.*
 
-version = "2021.2"
+version = "2023.05"
 
 project {
-    buildType(Login)
-    buildType(Compile)
-    buildType(Push)
     buildType(UploadHelm)
+    buildType(Push)
 
-    buildTypesOrder = arrayListOf(Login, Compile, Push, UploadHelm)
+    buildTypesOrder = arrayListOf(UploadHelm, Push)
 
     params {
-        text (
-            "env.DockerPassword",
-            label = "DockerPassword",
-            value = "Fedcba99!",
-            allowEmpty = true,
-            display = ParameterDisplay.NORMAL)
         text (
             "env.DockerUsername",
             label = "DockerUsername",
             value = "datstarkey",
-            allowEmpty = true,
-            display = ParameterDisplay.NORMAL)
-        text (
-            "env.HelmPassword",
-            label = "HelmPassword",
-            value = "Pp87XB9nSbwy4q",
-            allowEmpty = true,
-            display = ParameterDisplay.NORMAL)
-        text (
-            "env.HelmUsername",
-            label = "HelmUsername",
-            value = "admin",
             allowEmpty = true,
             display = ParameterDisplay.NORMAL)
         select (
@@ -72,8 +52,8 @@ project {
             display = ParameterDisplay.HIDDEN)
     }
 }
-object Login : BuildType({
-    name = "Login"
+object UploadHelm : BuildType({
+    name = "UploadHelm"
     vcs {
         root(DslContext.settingsRoot)
         cleanCheckout = true
@@ -81,50 +61,35 @@ object Login : BuildType({
     steps {
         exec {
             path = "build.cmd"
-            arguments = "Login --skip"
+            arguments = "UploadHelm --skip"
             conditions { contains("teamcity.agent.jvm.os.name", "Windows") }
         }
         exec {
             path = "build.sh"
-            arguments = "Login --skip"
+            arguments = "UploadHelm --skip"
             conditions { doesNotContain("teamcity.agent.jvm.os.name", "Windows") }
         }
     }
     params {
+        text (
+            "env.HelmUsername",
+            label = "HelmUsername",
+            value = "admin",
+            allowEmpty = false,
+            display = ParameterDisplay.PROMPT)
+        password (
+            "env.HelmPassword",
+            label = "HelmPassword",
+            value = "",
+            display = ParameterDisplay.PROMPT)
         text(
             "teamcity.ui.runButton.caption",
-            "Login",
+            "Upload Helm",
             display = ParameterDisplay.HIDDEN)
     }
-})
-object Compile : BuildType({
-    name = "Compile"
-    vcs {
-        root(DslContext.settingsRoot)
-        cleanCheckout = true
-    }
-    steps {
-        exec {
-            path = "build.cmd"
-            arguments = "Compile --skip"
-            conditions { contains("teamcity.agent.jvm.os.name", "Windows") }
-        }
-        exec {
-            path = "build.sh"
-            arguments = "Compile --skip"
-            conditions { doesNotContain("teamcity.agent.jvm.os.name", "Windows") }
-        }
-    }
-    params {
-        text(
-            "teamcity.ui.runButton.caption",
-            "Compile",
-            display = ParameterDisplay.HIDDEN)
-    }
-    dependencies {
-        snapshot(Login) {
-            onDependencyFailure = FailureAction.FAIL_TO_START
-            onDependencyCancel = FailureAction.CANCEL
+    triggers {
+        vcs {
+            triggerRules = "+:**"
         }
     }
 })
@@ -150,42 +115,6 @@ object Push : BuildType({
         text(
             "teamcity.ui.runButton.caption",
             "Push",
-            display = ParameterDisplay.HIDDEN)
-    }
-    triggers {
-        vcs {
-            triggerRules = "+:**"
-        }
-    }
-    dependencies {
-        snapshot(Compile) {
-            onDependencyFailure = FailureAction.FAIL_TO_START
-            onDependencyCancel = FailureAction.CANCEL
-        }
-    }
-})
-object UploadHelm : BuildType({
-    name = "UploadHelm"
-    vcs {
-        root(DslContext.settingsRoot)
-        cleanCheckout = true
-    }
-    steps {
-        exec {
-            path = "build.cmd"
-            arguments = "UploadHelm --skip"
-            conditions { contains("teamcity.agent.jvm.os.name", "Windows") }
-        }
-        exec {
-            path = "build.sh"
-            arguments = "UploadHelm --skip"
-            conditions { doesNotContain("teamcity.agent.jvm.os.name", "Windows") }
-        }
-    }
-    params {
-        text(
-            "teamcity.ui.runButton.caption",
-            "Upload Helm",
             display = ParameterDisplay.HIDDEN)
     }
     triggers {
