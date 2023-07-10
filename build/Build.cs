@@ -93,6 +93,7 @@ class Build : NukeBuild
 			else
 			{
 				Log.Error("{Message}", await result.Content.ReadAsStringAsync());
+				Assert.Fail("Failed to upload Helm Chart");
 			}
 			
 			//Delete the chart after uploading
