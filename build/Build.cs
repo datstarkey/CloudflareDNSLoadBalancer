@@ -23,8 +23,8 @@ class Build : NukeBuild
 
 	[Parameter] readonly string DockerUsername;
 	[Parameter] readonly string HelmUsername;
-	[Parameter][Secret]  readonly string DockerPassword;
-	[Parameter][Secret]  readonly string HelmPassword;
+	[Parameter][Secret] readonly string DockerPassword;
+	[Parameter][Secret] readonly string HelmPassword;
 
 	[Solution(GenerateProjects = true)] readonly Solution Solution;
 
@@ -42,7 +42,6 @@ class Build : NukeBuild
 	Target Login => _ => _
 		.Requires(()=> DockerUsername)
 		.Requires(()=> DockerPassword)
-		.Unlisted()
 		.Executes(() =>
 			DockerTasks.DockerLogin(x => x
 				.SetUsername(DockerUsername)
@@ -52,7 +51,6 @@ class Build : NukeBuild
 
 	Target Compile => _ => _
 		.DependsOn(Login)
-		.Unlisted()
 		.Executes(() =>
 			DockerTasks.DockerBuild(x => x
 				.SetPath(RootDirectory)
@@ -66,8 +64,6 @@ class Build : NukeBuild
 		.Executes(() => DockerTasks.DockerPush(x => x.SetName(DockerTag)));
 
 	Target UploadHelm => _ => _
-		.Requires(()=> HelmUsername)
-		.Requires(()=> HelmPassword)
 		.Executes(async () =>
 		{
 			HelmTasks.HelmPackage(x => x.SetVersion(GitVersion.SemVer).SetChartPaths(HelmChartPath).SetDestination(RootDirectory / "Helm"));

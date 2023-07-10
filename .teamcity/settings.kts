@@ -35,6 +35,12 @@ project {
             value = "datstarkey",
             allowEmpty = true,
             display = ParameterDisplay.NORMAL)
+        text (
+            "env.HelmUsername",
+            label = "HelmUsername",
+            value = "admin",
+            allowEmpty = true,
+            display = ParameterDisplay.NORMAL)
         select (
             "env.Verbosity",
             label = "Verbosity",
@@ -81,17 +87,6 @@ object UploadHelm : BuildType({
         }
     }
     params {
-        text (
-            "env.HelmUsername",
-            label = "HelmUsername",
-            value = "admin",
-            allowEmpty = false,
-            display = ParameterDisplay.PROMPT)
-        password (
-            "env.HelmPassword",
-            label = "HelmPassword",
-            value = "",
-            display = ParameterDisplay.PROMPT)
         text(
             "teamcity.ui.runButton.caption",
             "Upload Helm",
