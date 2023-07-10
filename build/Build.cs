@@ -15,15 +15,16 @@ using System.Net.Http.Headers;
 [TeamCity(
 	VcsTriggeredTargets = new []{nameof(UploadHelm), nameof(Push)},
 	NonEntryTargets = new[]{nameof(Login), nameof(Compile)},
+	ImportSecrets = new[]{nameof(DockerPassword), nameof(HelmPassword)},
 	Version = "2023.05")]
 class Build : NukeBuild
 {
 	public static int Main() => Execute<Build>(x => x.Push, x => x.UploadHelm);
 
 	[Parameter] readonly string DockerUsername;
-	[Parameter] [Secret] readonly string DockerPassword;
 	[Parameter] readonly string HelmUsername;
-	[Parameter] [Secret] readonly string HelmPassword;
+	[Parameter][Secret]  readonly string DockerPassword;
+	[Parameter][Secret]  readonly string HelmPassword;
 
 	[Solution(GenerateProjects = true)] readonly Solution Solution;
 

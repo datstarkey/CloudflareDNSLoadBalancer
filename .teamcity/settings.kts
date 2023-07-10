@@ -42,6 +42,16 @@ project {
             value = "Normal",
             options = listOf("Minimal" to "Minimal", "Normal" to "Normal", "Quiet" to "Quiet", "Verbose" to "Verbose"),
             display = ParameterDisplay.NORMAL)
+        password (
+            "env.DockerPassword",
+            label = "DockerPassword",
+            value = "",
+            display = ParameterDisplay.HIDDEN)
+        password (
+            "env.HelmPassword",
+            label = "HelmPassword",
+            value = "",
+            display = ParameterDisplay.HIDDEN)
         text(
             "teamcity.runner.commandline.stdstreams.encoding",
             "UTF-8",
