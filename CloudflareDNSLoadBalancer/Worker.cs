@@ -54,7 +54,6 @@ public class Worker : BackgroundService
 			var host = split[^2] + "." + split.Last();
 			var name = svc.Item2.Metadata.Name;
 
-			_logger.LogInformation("Found service {Service} with Uri {Uri}", name, uri);
 
 			if (svc.Item2.Status?.LoadBalancer?.Ingress is null)
 			{
@@ -65,11 +64,15 @@ public class Worker : BackgroundService
 			var externalIps = svc.Item2.Status.LoadBalancer.Ingress.Select(x => x.Ip).ToList();
 
 			//Skip if we already have the same ips in memory
-			if (_storedValues.TryGetValue(name, out var storedIps))
+			if (_storedValues.TryGetValue(name, out var storedIps) && 
+			    storedIps.Count == externalIps.Count &&  
+			    externalIps.All(storedIps.Contains))
 			{
-				if (externalIps.All(x => storedIps.Contains(x)))
-					continue;
+				_logger.LogInformation("Service {Service} has not changed ignoring", svc.Item2.Metadata.Name);
+				continue;
 			}
+
+			_logger.LogInformation("Found service {Service} with Uri {Uri}", name, uri);
 
 			var ips = externalIps;
 			_storedValues.AddOrUpdate(svc.Item2.Metadata.Name, externalIps, (k, v) => ips);
