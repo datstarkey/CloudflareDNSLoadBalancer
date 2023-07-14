@@ -7,6 +7,7 @@ using CloudFlare.Client.Enumerators;
 using k8s;
 using k8s.Models;
 using Microsoft.VisualBasic;
+using System.Collections.Concurrent;
 
 public class Worker : BackgroundService
 {
@@ -15,6 +16,8 @@ public class Worker : BackgroundService
 	private readonly string? _cloudflareToken = Environment.GetEnvironmentVariable("CLOUDFLARE_TOKEN");
 	private readonly bool? _cloudflareProxy = bool.Parse(Environment.GetEnvironmentVariable("CLOUDFLARE_PROXY")?.ToLower() ?? "false");
 	private readonly Kubernetes _kubernetes;
+
+	private static ConcurrentDictionary<string, List<string>> _storedValues = new ConcurrentDictionary<string, List<string>>();
 
 	public Worker(ILogger<Worker> logger)
 	{
@@ -49,10 +52,27 @@ public class Worker : BackgroundService
 				continue;
 			}
 			var host = split[^2] + "." + split.Last();
+			var name = svc.Item2.Metadata.Name;
 
-			_logger.LogInformation("Found service {Service} with Uri {Uri}", svc.Item2.Metadata.Name, uri);
+			_logger.LogInformation("Found service {Service} with Uri {Uri}", name, uri);
+
+			if (svc.Item2.Status?.LoadBalancer?.Ingress is null)
+			{
+				_logger.LogWarning("Service {Service} does not have a load balancer", svc.Item2.Metadata.Name);
+				continue;
+			}
 
 			var externalIps = svc.Item2.Status.LoadBalancer.Ingress.Select(x => x.Ip).ToList();
+
+			//Skip if we already have the same ips in memory
+			if (_storedValues.TryGetValue(name, out var storedIps))
+			{
+				if (externalIps.All(x => storedIps.Contains(x)))
+					continue;
+			}
+
+			var ips = externalIps;
+			_storedValues.AddOrUpdate(svc.Item2.Metadata.Name, externalIps, (k, v) => ips);
 
 			//Determine if we only want to load balance to existing pods
 			svc.Item2.Metadata.Labels.TryGetValue("cloudflaredns.kubernetes.io/exact-match", out var exactMatchString);
@@ -60,7 +80,6 @@ public class Worker : BackgroundService
 			{
 
 				var nodeList = await _kubernetes.ListNodeAsync(cancellationToken: stoppingToken);
-
 				//Get all available load balancing nodes
 				var nodes = nodeList.Items.Where(x => x.Status.Addresses.Any(a => a.Type == "ExternalIP"))
 					.ToDictionary(k => k.Name(), v => v.Status.Addresses.Where(x => x.Type == "ExternalIP")
@@ -95,13 +114,12 @@ public class Worker : BackgroundService
 				Name = host
 			}, cancellationToken: stoppingToken);
 
-
 			if (zones is null)
 			{
 				_logger.LogWarning("Could not find zone for {Host}", host);
 				continue;
 			}
-			
+
 			var zone = zones.Result.FirstOrDefault();
 			if (zone is null)
 			{
@@ -114,7 +132,7 @@ public class Worker : BackgroundService
 			var records = await client.Zones.DnsRecords.GetAsync(zone.Id, new DnsRecordFilter()
 			{
 				Name = uri
-				
+
 			}, cancellationToken: stoppingToken);
 			if (records.Result.Any())
 			{
@@ -135,8 +153,7 @@ public class Worker : BackgroundService
 								_logger.LogInformation("Ignoring {RecordName} as its an A Record with the same IP and Proxy Status", record.Name);
 								continue;
 							}
-							
-							
+
 							_logger.LogInformation("Updating {RecordName}", record.Name);
 							await client.Zones.DnsRecords.UpdateAsync(zone.Id, record.Id, new ModifiedDnsRecord()
 							{
@@ -169,7 +186,7 @@ public class Worker : BackgroundService
 					await CreateRecord(client, zone.Id, uri, ip, stoppingToken);
 				}
 			}
-			
+
 		}
 	}
 
@@ -185,5 +202,5 @@ public class Worker : BackgroundService
 			Type = DnsRecordType.A
 		}, cancellationToken: cancellationToken);
 	}
-	
+
 }
